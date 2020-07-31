@@ -39,13 +39,44 @@ def cart(request):
         items = order.orderitem_set.all()
         cart_items = order.get_cart_item
     else:
+        print("Helllo Ando")
+        try:
+            cart = json.loads(request.COOKIES['cart'])
+            print('CART TRY', cart)
+
+        except:
+            cart = {}
+            print('CART EXCEPT',cart)
+
+
         items = []
         order = {
             'get_cart_total':0,
             'get_cart_item':0,
             'shipping': False,
         }
+
         cart_items = order['get_cart_item']
+
+        for i in cart:
+            cart_items += cart[i]['quantity']
+            product = Product.objects.get(id=i)
+            total = (product.price * cart[i]['quantity'])
+
+            order['get_cart_total'] += total
+            order['get_cart_item'] += cart[i]['quantity']
+            item = {
+                'product':{
+                    'id':product.id,
+                    'name':product.name,
+                    'price':product.price,
+                    'imageURL':product.imageURL,
+                },
+                'quantity':cart[i]['quantity'],
+                'get_total':total,
+            }
+
+            items.append(item)
 
     context = {
         'items':items,
@@ -111,7 +142,8 @@ def processOrder(request):
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, complete=False)
     else:
-        customer, order = guestOrder(request, data)
+        pass
+        # customer, order = guestOrder(request, data)
 
     total = float(data['form']['total'])
     order.transaction_id = transaction_id
